@@ -1,0 +1,6 @@
+.env
+**/.env
+k8s/backups/
+**/__pycache__/
+*.py[cod]
+*.bak
