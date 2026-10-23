@@ -8,14 +8,15 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
-  build-and-check:
+  build-and-publish:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v6
 
       - name: Check Python syntax
         run: |
@@ -23,14 +24,49 @@ jobs:
           python -m py_compile user-service/app.py
           python -m py_compile order-service/app.py
 
-      - name: Build User Service
-        run: docker build -t user-service:ci ./user-service
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build Order Service
-        run: docker build -t order-service:ci ./order-service
+      - name: Login to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build API Gateway
-        run: docker build -t api-gateway:ci ./api-gateway
+      - name: Build and publish User Service
+        uses: docker/build-push-action@v7
+        with:
+          context: ./user-service
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ghcr.io/udaytechin/user-service:${{ github.sha }}
+            ghcr.io/udaytechin/user-service:latest
 
-      - name: Build E-commerce Frontend
-        run: docker build -t ecommerce-frontend:ci ./frontend
+      - name: Build and publish Order Service
+        uses: docker/build-push-action@v7
+        with:
+          context: ./order-service
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ghcr.io/udaytechin/order-service:${{ github.sha }}
+            ghcr.io/udaytechin/order-service:latest
+
+      - name: Build and publish API Gateway
+        uses: docker/build-push-action@v7
+        with:
+          context: ./api-gateway
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ghcr.io/udaytechin/api-gateway:${{ github.sha }}
+            ghcr.io/udaytechin/api-gateway:latest
+
+      - name: Build and publish E-commerce Frontend
+        uses: docker/build-push-action@v7
+        with:
+          context: ./frontend
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ghcr.io/udaytechin/ecommerce-frontend:${{ github.sha }}
+            ghcr.io/udaytechin/ecommerce-frontend:latest
