@@ -1,0 +1,36 @@
+name: Microservices CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Check Python syntax
+        run: |
+          python -m py_compile api-gateway/app.py
+          python -m py_compile user-service/app.py
+          python -m py_compile order-service/app.py
+
+      - name: Build User Service
+        run: docker build -t user-service:ci ./user-service
+
+      - name: Build Order Service
+        run: docker build -t order-service:ci ./order-service
+
+      - name: Build API Gateway
+        run: docker build -t api-gateway:ci ./api-gateway
+
+      - name: Build E-commerce Frontend
+        run: docker build -t ecommerce-frontend:ci ./frontend
